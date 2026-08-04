@@ -1,0 +1,22 @@
+# Never commit API keys
+SkyCast/Support/Secrets.swift
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+
+# Dependency managers
+Pods/
+Carthage/Build/
+
+# macOS
+.DS_Store
