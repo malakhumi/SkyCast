@@ -1,5 +1,5 @@
 # Never commit API keys
-SkyCast/Support/Secrets.swift
+Secrets.swift
 
 # Xcode
 build/
