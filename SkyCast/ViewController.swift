@@ -1,19 +1,31 @@
-//
 //  ViewController.swift
 //  SkyCast
-//
-//  Created by Malak on 04/08/2026.
-//
 
 import UIKit
+import SwiftUI
 
-class ViewController: UIViewController {
+/// UIKit shell that comes from the storyboard.
+/// Its only job is to host the SwiftUI Home screen.
+final class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+
+        title = "SkyCast"
+
+        let hosting = UIHostingController(rootView: HomeView())
+
+        addChild(hosting)
+        view.addSubview(hosting.view)
+
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hosting.view.topAnchor.constraint(equalTo: view.topAnchor),
+            hosting.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+
+        hosting.didMove(toParent: self)
     }
-
-
 }
-
