@@ -17,9 +17,12 @@ final class HomeViewModel {
     }
 
     private(set) var state: State = .idle
-    var city: String = "London"
 
     private let service: WeatherService
+    private let locationService = LocationService()
+
+    /// Used when location is denied or unavailable.
+    var fallbackCity = "London"
 
     init(service: WeatherService = OpenWeatherService()) {
         self.service = service
@@ -28,8 +31,20 @@ final class HomeViewModel {
     func load() async {
         state = .loading
         do {
-            let weather = try await service.currentWeather(forCity: city)
+            let coordinate = try await locationService.currentLocation()
+            let weather = try await service.currentWeather(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude
+            )
             state = .loaded(weather)
+        } catch {
+            await loadFallback()
+        }
+    }
+
+    private func loadFallback() async {
+        do {
+            state = .loaded(try await service.currentWeather(forCity: fallbackCity))
         } catch {
             state = .failed(error.localizedDescription)
         }

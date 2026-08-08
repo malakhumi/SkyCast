@@ -11,6 +11,7 @@ enum WeatherError: LocalizedError, Equatable {
     case noInternet
     case decodingFailed
     case server(statusCode: Int)
+    case locationUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +27,8 @@ enum WeatherError: LocalizedError, Equatable {
             return "The weather data was in an unexpected format."
         case .server(let statusCode):
             return "The weather service returned an error (\(statusCode))."
+        case .locationUnavailable:
+            return "Couldn't determine your location."
         }
     }
 }

@@ -14,9 +14,19 @@ struct OpenWeatherService: WeatherService {
     }
 
     func currentWeather(forCity city: String) async throws -> CurrentWeatherResponse {
+        try await fetch([URLQueryItem(name: "q", value: city)])
+    }
+
+    func currentWeather(latitude: Double, longitude: Double) async throws -> CurrentWeatherResponse {
+        try await fetch([
+            URLQueryItem(name: "lat", value: String(latitude)),
+            URLQueryItem(name: "lon", value: String(longitude))
+        ])
+    }
+
+    private func fetch(_ locationItems: [URLQueryItem]) async throws -> CurrentWeatherResponse {
         var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")
-        components?.queryItems = [
-            URLQueryItem(name: "q", value: city),
+        components?.queryItems = locationItems + [
             URLQueryItem(name: "units", value: "metric"),
             URLQueryItem(name: "appid", value: apiKey)
         ]
