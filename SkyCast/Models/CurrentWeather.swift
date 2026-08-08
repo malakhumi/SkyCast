@@ -25,4 +25,9 @@ struct CurrentWeatherResponse: Codable {
 extension CurrentWeatherResponse {
     var condition: WeatherCondition? { weather.first }
     var measuredAt: Date { Date(timeIntervalSince1970: TimeInterval(dt)) }
+    /// OpenWeather's icon code ends in "n" at night, "d" during the day.
+    /// This reflects the city's local time, not the device's.
+    var isNight: Bool {
+        condition?.icon.hasSuffix("n") ?? true
+    }
 }
