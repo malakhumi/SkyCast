@@ -14,22 +14,36 @@ struct OpenWeatherService: WeatherService {
     }
 
     func currentWeather(forCity city: String) async throws -> CurrentWeatherResponse {
-        try await fetch([URLQueryItem(name: "q", value: city)])
+        try await fetch("weather", [URLQueryItem(name: "q", value: city)])
     }
 
     func currentWeather(latitude: Double, longitude: Double) async throws -> CurrentWeatherResponse {
-        try await fetch([
-            URLQueryItem(name: "lat", value: String(latitude)),
-            URLQueryItem(name: "lon", value: String(longitude))
-        ])
+        try await fetch("weather", coordinates(latitude, longitude))
     }
 
-    private func fetch(_ locationItems: [URLQueryItem]) async throws -> CurrentWeatherResponse {
-        var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")
-        components?.queryItems = locationItems + [
-            URLQueryItem(name: "units", value: "metric"),
-            URLQueryItem(name: "appid", value: apiKey)
+    func forecast(forCity city: String) async throws -> ForecastResponse {
+        try await fetch("forecast", [URLQueryItem(name: "q", value: city)])
+    }
+
+    func forecast(latitude: Double, longitude: Double) async throws -> ForecastResponse {
+        try await fetch("forecast", coordinates(latitude, longitude))
+    }
+
+    private func coordinates(_ latitude: Double, _ longitude: Double) -> [URLQueryItem] {
+        [
+            URLQueryItem(name: "lat", value: String(latitude)),
+            URLQueryItem(name: "lon", value: String(longitude))
         ]
+    }
+
+    private func fetch<T: Decodable>(_ path: String, _ locationItems: [URLQueryItem]) async throws -> T {
+        var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/\(path)")
+        
+        components?.queryItems = locationItems + [
+                    URLQueryItem(name: "units", value: "metric"),
+                    URLQueryItem(name: "appid", value: apiKey)
+                ]
+
 
         guard let url = components?.url else {
             throw WeatherError.invalidURL
@@ -62,7 +76,7 @@ struct OpenWeatherService: WeatherService {
         decoder.keyDecodingStrategy = .convertFromSnakeCase
 
         do {
-            return try decoder.decode(CurrentWeatherResponse.self, from: data)
+            return try decoder.decode(T.self, from: data)
         } catch {
             throw WeatherError.decodingFailed
         }
