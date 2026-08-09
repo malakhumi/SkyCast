@@ -5,14 +5,23 @@
 import Foundation
 import Observation
 
+
+
+struct WeatherSnapshot {
+    let current: CurrentWeatherResponse
+    let hourly: [ForecastResponse.Entry]
+    let daily: [DailyForecast]
+}
+
 @MainActor
 @Observable
+
 final class HomeViewModel {
 
     enum State {
         case idle
         case loading
-        case loaded(CurrentWeatherResponse)
+        case loaded(WeatherSnapshot)
         case failed(String)
     }
 
@@ -27,16 +36,34 @@ final class HomeViewModel {
     init(service: WeatherService = OpenWeatherService()) {
         self.service = service
     }
+    
+    private func makeSnapshot(
+        current: CurrentWeatherResponse,
+        forecast: ForecastResponse
+    ) -> WeatherSnapshot {
+        WeatherSnapshot(
+            current: current,
+            hourly: Array(forecast.list.prefix(8)),
+            daily: forecast.dailySummaries()
+        )
+    }
 
     func load() async {
         state = .loading
         do {
             let coordinate = try await locationService.currentLocation()
-            let weather = try await service.currentWeather(
+            //async let is used here because you are making two independent network requests, and you want them to run at the same time.
+            async let current = service.currentWeather(
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude
             )
-            state = .loaded(weather)
+            async let forecast = service.forecast(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude
+            )
+            state = .loaded(
+                makeSnapshot(current: try await current, forecast: try await forecast)
+            )
         } catch {
             await loadFallback()
         }
@@ -44,7 +71,11 @@ final class HomeViewModel {
 
     private func loadFallback() async {
         do {
-            state = .loaded(try await service.currentWeather(forCity: fallbackCity))
+            async let current = service.currentWeather(forCity: fallbackCity)
+            async let forecast = service.forecast(forCity: fallbackCity)
+            state = .loaded(
+                makeSnapshot(current: try await current, forecast: try await forecast)
+            )
         } catch {
             state = .failed(error.localizedDescription)
         }

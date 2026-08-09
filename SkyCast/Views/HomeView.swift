@@ -7,7 +7,7 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
 
     private var isNight: Bool {
-        if case .loaded(let weather) = viewModel.state { return weather.isNight }
+        if case .loaded(let snapshot) = viewModel.state { return snapshot.current.isNight }
         return true
     }
 
@@ -26,8 +26,8 @@ struct HomeView: View {
             case .idle, .loading:
                 ProgressView()
                     .tint(theme.primaryText)
-            case .loaded(let weather):
-                weatherContent(weather)
+            case .loaded(let snapshot):
+                weatherContent(snapshot)
             case .failed(let message):
                 errorContent(message)
             }
@@ -38,15 +38,17 @@ struct HomeView: View {
         }
     }
 
-    private func weatherContent(_ weather: CurrentWeatherResponse) -> some View {
-        VStack(spacing: 20) {
-            todayCard(weather)
-            detailsCard(weather)
-            Spacer()
+    private func weatherContent(_ snapshot: WeatherSnapshot) -> some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                todayCard(snapshot.current)
+                hourlySection(snapshot.hourly)
+                dailySection(snapshot.daily)
+                detailsCard(snapshot.current)
+            }
+            .padding(20)
         }
-        .padding(20)
     }
-
     private func todayCard(_ weather: CurrentWeatherResponse) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -94,6 +96,87 @@ struct HomeView: View {
         }
         .padding(20)
         .background(theme.card, in: RoundedRectangle(cornerRadius: 24))
+    }
+    
+    private func hourlySection(_ entries: [ForecastResponse.Entry]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Next 24 hours")
+                .font(.headline)
+                .foregroundStyle(theme.primaryText)
+                .padding(.leading, 4)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(entries) { entry in
+                        VStack(spacing: 10) {
+                            Text(entry.date, format: .dateTime.hour())
+                                .font(.caption)
+                                .foregroundStyle(theme.mutedText)
+
+                            if let condition = entry.condition {
+                                Image(systemName: condition.systemImageName)
+                                    .symbolRenderingMode(.multicolor)
+                                    .font(.title3)
+                            }
+
+                            Text("\(Int(entry.main.temp.rounded()))°")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.primaryText)
+                        }
+                        .frame(width: 62)
+                        .padding(.vertical, 14)
+                        .background(theme.card, in: RoundedRectangle(cornerRadius: 18))
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+    
+    private func dailySection(_ days: [DailyForecast]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Next 5 days")
+                .font(.headline)
+                .foregroundStyle(theme.primaryText)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                    HStack(spacing: 8) {
+                        Text(Calendar.current.isDateInToday(day.date)
+                             ? "Today"
+                             : day.date.formatted(.dateTime.weekday(.wide)))
+                            .font(.subheadline)
+                            .foregroundStyle(theme.primaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if let condition = day.condition {
+                            Image(systemName: condition.systemImageName)
+                                .symbolRenderingMode(.multicolor)
+                                .font(.body)
+                                .frame(width: 32)
+                        }
+
+                        Text("\(Int(day.minTemp.rounded()))°")
+                            .font(.subheadline)
+                            .foregroundStyle(theme.mutedText)
+                            .frame(width: 42, alignment: .trailing)
+
+                        Text("\(Int(day.maxTemp.rounded()))°")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(theme.primaryText)
+                            .frame(width: 42, alignment: .trailing)
+                    }
+                    .padding(.vertical, 12)
+
+                    if index < days.count - 1 {
+                        Divider().overlay(theme.mutedText.opacity(0.25))
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .background(theme.card, in: RoundedRectangle(cornerRadius: 24))
+        }
     }
 
     private func detailsCard(_ weather: CurrentWeatherResponse) -> some View {
