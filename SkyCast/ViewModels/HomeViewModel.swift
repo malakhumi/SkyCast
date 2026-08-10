@@ -13,6 +13,7 @@ struct WeatherSnapshot {
     let daily: [DailyForecast]
 }
 
+
 @MainActor
 @Observable
 
@@ -24,6 +25,13 @@ final class HomeViewModel {
         case loaded(WeatherSnapshot)
         case failed(String)
     }
+    
+    var isNight: Bool {
+        if case .loaded(let snapshot) = state { return snapshot.current.isNight }
+        return true
+    }
+
+    var theme: SkyTheme { isNight ? .night : .day }
 
     private(set) var state: State = .idle
 
@@ -47,12 +55,32 @@ final class HomeViewModel {
             daily: forecast.dailySummaries()
         )
     }
+    
+    private enum Source {
+        case deviceLocation
+        case city(GeocodingResult)
+    }
+
+    private var source: Source = .deviceLocation
 
     func load() async {
+        switch source {
+        case .deviceLocation:
+            await loadFromDeviceLocation()
+        case .city(let city):
+            await loadCity(city)
+        }
+    }
+
+    func load(for city: GeocodingResult) async {
+        source = .city(city)
+        await loadCity(city)
+    }
+
+    private func loadFromDeviceLocation() async {
         state = .loading
         do {
             let coordinate = try await locationService.currentLocation()
-            //async let is used here because you are making two independent network requests, and you want them to run at the same time.
             async let current = service.currentWeather(
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude
@@ -68,7 +96,24 @@ final class HomeViewModel {
             await loadFallback()
         }
     }
+    
+    func loadDeviceLocation() async {
+        source = .deviceLocation
+        await loadFromDeviceLocation()
+    }
 
+    private func loadCity(_ city: GeocodingResult) async {
+        state = .loading
+        do {
+            async let current = service.currentWeather(latitude: city.lat, longitude: city.lon)
+            async let forecast = service.forecast(latitude: city.lat, longitude: city.lon)
+            state = .loaded(
+                makeSnapshot(current: try await current, forecast: try await forecast)
+            )
+        } catch {
+            state = .failed(error.localizedDescription)
+        }
+    }
     private func loadFallback() async {
         do {
             async let current = service.currentWeather(forCity: fallbackCity)
