@@ -14,19 +14,19 @@ struct OpenWeatherService: WeatherService {
     }
 
     func currentWeather(forCity city: String) async throws -> CurrentWeatherResponse {
-        try await fetch("weather", [URLQueryItem(name: "q", value: city)])
+        try await fetch("data/2.5/weather", [URLQueryItem(name: "q", value: city)])
     }
 
     func currentWeather(latitude: Double, longitude: Double) async throws -> CurrentWeatherResponse {
-        try await fetch("weather", coordinates(latitude, longitude))
+        try await fetch("data/2.5/weather", coordinates(latitude, longitude))
     }
 
     func forecast(forCity city: String) async throws -> ForecastResponse {
-        try await fetch("forecast", [URLQueryItem(name: "q", value: city)])
+        try await fetch("data/2.5/forecast", [URLQueryItem(name: "q", value: city)])
     }
 
     func forecast(latitude: Double, longitude: Double) async throws -> ForecastResponse {
-        try await fetch("forecast", coordinates(latitude, longitude))
+        try await fetch("data/2.5/forecast", coordinates(latitude, longitude))
     }
 
     private func coordinates(_ latitude: Double, _ longitude: Double) -> [URLQueryItem] {
@@ -35,9 +35,16 @@ struct OpenWeatherService: WeatherService {
             URLQueryItem(name: "lon", value: String(longitude))
         ]
     }
+    
+    func searchCities(matching query: String) async throws -> [GeocodingResult] {
+        try await fetch("geo/1.0/direct", [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "limit", value: "8")
+        ])
+    }
 
     private func fetch<T: Decodable>(_ path: String, _ locationItems: [URLQueryItem]) async throws -> T {
-        var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/\(path)")
+        var components = URLComponents(string: "https://api.openweathermap.org/\(path)")
         
         components?.queryItems = locationItems + [
                     URLQueryItem(name: "units", value: "metric"),

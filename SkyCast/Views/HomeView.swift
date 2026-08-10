@@ -4,14 +4,10 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var viewModel = HomeViewModel()
+    let viewModel: HomeViewModel
+    let onSearchTapped: () -> Void
 
-    private var isNight: Bool {
-        if case .loaded(let snapshot) = viewModel.state { return snapshot.current.isNight }
-        return true
-    }
-
-    private var theme: SkyTheme { isNight ? .night : .day }
+    private var theme: SkyTheme { viewModel.theme }
 
     var body: some View {
         ZStack {
@@ -32,15 +28,39 @@ struct HomeView: View {
                 errorContent(message)
             }
         }
-        .animation(.easeInOut(duration: 0.5), value: isNight)
+        .animation(.easeInOut(duration: 0.5), value: viewModel.isNight)
         .task {
             await viewModel.load()
         }
     }
-
+    
     private func weatherContent(_ snapshot: WeatherSnapshot) -> some View {
         ScrollView {
             VStack(spacing: 20) {
+                HStack(spacing: 12) {
+                    Spacer()
+
+                    Button {
+                        Task { await viewModel.loadDeviceLocation() }
+                    } label: {
+                        Image(systemName: "location.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(theme.primaryText)
+                            .padding(12)
+                            .background(theme.card, in: Circle())
+                    }
+                    .accessibilityLabel("Use my location")
+
+                    Button(action: onSearchTapped) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(theme.primaryText)
+                            .padding(12)
+                            .background(theme.card, in: Circle())
+                    }
+                    .accessibilityLabel("Search for a city")
+                }
+
                 todayCard(snapshot.current)
                 hourlySection(snapshot.hourly)
                 dailySection(snapshot.daily)
@@ -49,6 +69,8 @@ struct HomeView: View {
             .padding(20)
         }
     }
+
+
     private func todayCard(_ weather: CurrentWeatherResponse) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -76,9 +98,7 @@ struct HomeView: View {
 
                 if let condition = weather.condition {
                     VStack(spacing: 6) {
-                        Image(systemName: condition.systemImageName)
-                            .symbolRenderingMode(.multicolor)
-                            .font(.system(size: 52))
+                        weatherIcon(condition, size: 52)
                         Text(condition.description.capitalized)
                             .font(.caption)
                             .foregroundStyle(theme.mutedText)
@@ -114,9 +134,7 @@ struct HomeView: View {
                                 .foregroundStyle(theme.mutedText)
 
                             if let condition = entry.condition {
-                                Image(systemName: condition.systemImageName)
-                                    .symbolRenderingMode(.multicolor)
-                                    .font(.title3)
+                                weatherIcon(condition, size: 22)
                             }
 
                             Text("\(Int(entry.main.temp.rounded()))°")
@@ -151,9 +169,7 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         if let condition = day.condition {
-                            Image(systemName: condition.systemImageName)
-                                .symbolRenderingMode(.multicolor)
-                                .font(.body)
+                            weatherIcon(condition, size: 18)
                                 .frame(width: 32)
                         }
 
@@ -220,8 +236,23 @@ struct HomeView: View {
         }
         .padding()
     }
+    
+    private func weatherIcon(_ condition: WeatherCondition, size: CGFloat) -> some View {
+        let primary: Color = condition.isSunSymbol ? theme.accent
+            : condition.isMoonSymbol ? theme.iconMoon
+            : theme.iconCloud
+
+        let secondary: Color = condition.containsMoon ? theme.iconMoon
+            : (condition.containsSun || condition.containsBolt) ? theme.accent
+            : theme.iconRain
+
+        return Image(systemName: condition.systemImageName)
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(primary, secondary, theme.iconRain)
+            .font(.system(size: size))
+    }
 }
 
 #Preview {
-    HomeView()
+    HomeView(viewModel: HomeViewModel(), onSearchTapped: {})
 }

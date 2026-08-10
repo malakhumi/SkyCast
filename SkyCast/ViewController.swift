@@ -8,13 +8,17 @@ import SwiftUI
 /// Its only job is to host the SwiftUI Home screen.
 final class ViewController: UIViewController {
 
+    private let viewModel = HomeViewModel()
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationController?.setNavigationBarHidden(true, animated: false)
 
-        title = "SkyCast"
-
-        let hosting = UIHostingController(rootView: HomeView())
+        let hosting = UIHostingController(
+            rootView: HomeView(
+                viewModel: viewModel,
+                onSearchTapped: { [weak self] in self?.showCitySearch() }
+            )
+        )
 
         addChild(hosting)
         view.addSubview(hosting.view)
@@ -28,5 +32,21 @@ final class ViewController: UIViewController {
         ])
 
         hosting.didMove(toParent: self)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    private func showCitySearch() {
+        let citiesVC = CitiesViewController()
+        citiesVC.theme = viewModel.theme
+        citiesVC.onCitySelected = { [weak self] city in
+            guard let self else { return }
+            self.navigationController?.popViewController(animated: true)
+            Task { await self.viewModel.load(for: city) }
+        }
+        navigationController?.pushViewController(citiesVC, animated: true)
     }
 }

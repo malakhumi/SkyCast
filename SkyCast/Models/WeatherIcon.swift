@@ -24,4 +24,12 @@ extension WeatherCondition {
         default: return "cloud.fill"
         }
     }
+    var isSkyBodySymbol: Bool {
+        systemImageName.hasPrefix("sun") || systemImageName.hasPrefix("moon")
+    }
+    var isSunSymbol: Bool { systemImageName.hasPrefix("sun") }
+    var isMoonSymbol: Bool { systemImageName.hasPrefix("moon") }
+    var containsMoon: Bool { systemImageName.contains("moon") }
+    var containsSun: Bool { systemImageName.contains("sun") }
+    var containsBolt: Bool { systemImageName.contains("bolt") }
 }
