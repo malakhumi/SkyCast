@@ -9,6 +9,7 @@ import SwiftUI
 final class ViewController: UIViewController {
 
     private let viewModel = HomeViewModel()
+    private let settings = AppSettings()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -16,7 +17,9 @@ final class ViewController: UIViewController {
         let hosting = UIHostingController(
             rootView: HomeView(
                 viewModel: viewModel,
-                onSearchTapped: { [weak self] in self?.showCitySearch() }
+                settings: settings,
+                onSearchTapped: { [weak self] in self?.showCitySearch() },
+                onSettingsTapped: { [weak self] in self?.showSettings() }
             )
         )
 
@@ -48,5 +51,15 @@ final class ViewController: UIViewController {
             Task { await self.viewModel.load(for: city) }
         }
         navigationController?.pushViewController(citiesVC, animated: true)
+    }
+    
+    private func showSettings() {
+        let settingsVC = UIHostingController(
+            rootView: SettingsView(settings: settings, theme: viewModel.theme)
+        )
+        settingsVC.title = "Settings"
+        settingsVC.overrideUserInterfaceStyle = viewModel.theme.isNight ? .dark : .light
+        navigationController?.setNavigationBarHidden(false, animated: true)
+        navigationController?.pushViewController(settingsVC, animated: true)
     }
 }

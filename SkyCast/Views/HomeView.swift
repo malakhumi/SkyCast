@@ -5,7 +5,9 @@ import SwiftUI
 
 struct HomeView: View {
     let viewModel: HomeViewModel
+    let settings: AppSettings
     let onSearchTapped: () -> Void
+    let onSettingsTapped: () -> Void
 
     private var theme: SkyTheme { viewModel.theme }
 
@@ -38,6 +40,14 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: 20) {
                 HStack(spacing: 12) {
+                    Button(action: onSettingsTapped) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(theme.primaryText)
+                            .padding(12)
+                            .background(theme.card, in: Circle())
+                    }
+                    .accessibilityLabel("Settings")
                     Spacer()
 
                     Button {
@@ -59,8 +69,8 @@ struct HomeView: View {
                             .background(theme.card, in: Circle())
                     }
                     .accessibilityLabel("Search for a city")
+                    
                 }
-
                 todayCard(snapshot.current)
                 hourlySection(snapshot.hourly)
                 dailySection(snapshot.daily)
@@ -85,10 +95,10 @@ struct HomeView: View {
 
             HStack(alignment: .top) {
                 HStack(alignment: .top, spacing: 4) {
-                    Text("\(Int(weather.main.temp.rounded()))")
+                    Text(settings.temperatureValue(weather.main.temp))
                         .font(.system(size: 64, weight: .bold))
                         .foregroundStyle(theme.primaryText)
-                    Text("°C")
+                    Text(settings.temperatureSymbol)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(theme.accent)
                         .padding(.top, 10)
@@ -105,6 +115,7 @@ struct HomeView: View {
                     }
                 }
             }
+            
 
             HStack(spacing: 6) {
                 Image(systemName: "location.fill")
@@ -137,7 +148,7 @@ struct HomeView: View {
                                 weatherIcon(condition, size: 22)
                             }
 
-                            Text("\(Int(entry.main.temp.rounded()))°")
+                            Text(settings.temperature(entry.main.temp))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(theme.primaryText)
                         }
@@ -173,12 +184,12 @@ struct HomeView: View {
                                 .frame(width: 32)
                         }
 
-                        Text("\(Int(day.minTemp.rounded()))°")
+                        Text(settings.temperature(day.minTemp))
                             .font(.subheadline)
                             .foregroundStyle(theme.mutedText)
                             .frame(width: 42, alignment: .trailing)
 
-                        Text("\(Int(day.maxTemp.rounded()))°")
+                        Text(settings.temperature(day.maxTemp))
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(theme.primaryText)
                             .frame(width: 42, alignment: .trailing)
@@ -197,11 +208,11 @@ struct HomeView: View {
 
     private func detailsCard(_ weather: CurrentWeatherResponse) -> some View {
         HStack {
-            detail("Feels like", "\(Int(weather.main.feelsLike.rounded()))°")
+            detail("Feels like", settings.temperature(weather.main.feelsLike))
             Spacer()
             detail("Humidity", "\(weather.main.humidity)%")
             Spacer()
-            detail("Wind", String(format: "%.1f m/s", weather.wind.speed))
+            detail("Wind", settings.wind(weather.wind.speed))
         }
         .padding(20)
         .background(theme.card, in: RoundedRectangle(cornerRadius: 24))
@@ -254,5 +265,10 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: HomeViewModel(), onSearchTapped: {})
+    HomeView(
+        viewModel: HomeViewModel(),
+        settings: AppSettings(),
+        onSearchTapped: {},
+        onSettingsTapped: {}
+    )
 }
