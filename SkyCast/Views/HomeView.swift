@@ -71,9 +71,9 @@ struct HomeView: View {
                     .accessibilityLabel("Search for a city")
                     
                 }
-                todayCard(snapshot.current)
-                hourlySection(snapshot.hourly)
-                dailySection(snapshot.daily)
+                todayCard(snapshot)
+                hourlySection(snapshot.hourly, in: snapshot.timeZone)
+                dailySection(snapshot.daily, in: snapshot.timeZone)
                 locationSection(snapshot.current)
                 detailsCard(snapshot.current)
             }
@@ -100,14 +100,16 @@ struct HomeView: View {
     }
 
 
-    private func todayCard(_ weather: CurrentWeatherResponse) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private func todayCard(_ snapshot: WeatherSnapshot) -> some View {
+        let weather = snapshot.current
+
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Today")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(theme.primaryText)
                 Spacer()
-                Text(weather.measuredAt, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+                Text(dateText(weather.measuredAt, in: snapshot.timeZone))
                     .font(.subheadline)
                     .foregroundStyle(theme.mutedText)
             }
@@ -148,7 +150,10 @@ struct HomeView: View {
         .background(theme.card, in: RoundedRectangle(cornerRadius: 24))
     }
     
-    private func hourlySection(_ entries: [ForecastResponse.Entry]) -> some View {
+    private func hourlySection(
+        _ entries: [ForecastResponse.Entry],
+        in timeZone: TimeZone
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Next 24 hours")
                 .font(.headline)
@@ -159,7 +164,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     ForEach(entries) { entry in
                         VStack(spacing: 10) {
-                            Text(entry.date, format: .dateTime.hour())
+                            Text(hourText(entry.date, in: timeZone))
                                 .font(.caption)
                                 .foregroundStyle(theme.mutedText)
 
@@ -181,7 +186,10 @@ struct HomeView: View {
         }
     }
     
-    private func dailySection(_ days: [DailyForecast]) -> some View {
+    private func dailySection(
+        _ days: [DailyForecast],
+        in timeZone: TimeZone
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Next 5 days")
                 .font(.headline)
@@ -191,9 +199,9 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
                     HStack(spacing: 8) {
-                        Text(Calendar.current.isDateInToday(day.date)
+                        Text(isToday(day.date, in: timeZone)
                              ? "Today"
-                             : day.date.formatted(.dateTime.weekday(.wide)))
+                             : weekdayText(day.date, in: timeZone))
                             .font(.subheadline)
                             .foregroundStyle(theme.primaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -267,6 +275,31 @@ struct HomeView: View {
         .padding()
     }
     
+    // MARK: Dates, formatted in the displayed city's timezone
+
+    private func hourText(_ date: Date, in timeZone: TimeZone) -> String {
+        date.formatted(Date.FormatStyle(timeZone: timeZone).hour())
+    }
+
+    private func weekdayText(_ date: Date, in timeZone: TimeZone) -> String {
+        date.formatted(Date.FormatStyle(timeZone: timeZone).weekday(.wide))
+    }
+
+    private func dateText(_ date: Date, in timeZone: TimeZone) -> String {
+        date.formatted(
+            Date.FormatStyle(timeZone: timeZone)
+                .weekday(.abbreviated)
+                .day()
+                .month(.abbreviated)
+        )
+    }
+
+    private func isToday(_ date: Date, in timeZone: TimeZone) -> Bool {
+        var calendar = Calendar.current
+        calendar.timeZone = timeZone
+        return calendar.isDateInToday(date)
+    }
+
     private func weatherIcon(_ condition: WeatherCondition, size: CGFloat) -> some View {
         let primary: Color = condition.isSunSymbol ? theme.accent
             : condition.isMoonSymbol ? theme.iconMoon

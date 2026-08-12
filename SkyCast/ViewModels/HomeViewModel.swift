@@ -11,6 +11,8 @@ struct WeatherSnapshot {
     let current: CurrentWeatherResponse
     let hourly: [ForecastResponse.Entry]
     let daily: [DailyForecast]
+    /// The displayed city's timezone, so all times read as local to that city.
+    let timeZone: TimeZone
 }
 
 
@@ -49,10 +51,16 @@ final class HomeViewModel {
         current: CurrentWeatherResponse,
         forecast: ForecastResponse
     ) -> WeatherSnapshot {
-        WeatherSnapshot(
+        let timeZone = TimeZone(secondsFromGMT: forecast.city.timezone) ?? .current
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+
+        return WeatherSnapshot(
             current: current,
             hourly: Array(forecast.list.prefix(8)),
-            daily: forecast.dailySummaries()
+            daily: Array(forecast.dailySummaries(calendar: calendar).prefix(5)),
+            timeZone: timeZone
         )
     }
     
