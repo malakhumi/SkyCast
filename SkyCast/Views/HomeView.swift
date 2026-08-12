@@ -74,9 +74,28 @@ struct HomeView: View {
                 todayCard(snapshot.current)
                 hourlySection(snapshot.hourly)
                 dailySection(snapshot.daily)
+                locationSection(snapshot.current)
                 detailsCard(snapshot.current)
             }
             .padding(20)
+        }
+    }
+    
+    private func locationSection(_ weather: CurrentWeatherResponse) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Location")
+                .font(.headline)
+                .foregroundStyle(theme.primaryText)
+                .padding(.leading, 4)
+
+            MapView(
+                latitude: weather.coord.lat,
+                longitude: weather.coord.lon,
+                title: weather.name,
+                isNight: viewModel.isNight
+            )
+            .frame(height: 180)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
     }
 
