@@ -15,6 +15,8 @@ struct SkyTheme {
     let iconMoon: Color
     let iconRain: Color
     
+    
+    
     static let night = SkyTheme(
         isNight: true,
         gradientTop: Color(red: 0.04, green: 0.11, blue: 0.20),
