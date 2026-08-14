@@ -4,9 +4,9 @@ An iOS weather app built with **UIKit and SwiftUI together**, powered by the Ope
 
 SkyCast shows the weather where you are, lets you search and save cities, and adapts its entire appearance to whether it's day or night in the place you're looking at.
 
-| Day | Night | City search |
-|---|---|---|
-| ![Day](Screenshots/day.png) | ![Night](Screenshots/night.png) | ![Cities](Screenshots/cities.png) |
+| Day | Night | City search | Dynamic Type |
+|---|---|---|---|
+| ![Day](Screenshots/day.png) | ![Night](Screenshots/night.png) | ![Cities](Screenshots/cities.png) | ![Dynamic Type](Screenshots/dynamic-type.png) |
 
 ---
 
@@ -21,6 +21,7 @@ SkyCast shows the weather where you are, lets you search and save cities, and ad
 - **Unit settings** — °C/°F and m/s / km/h, persisted between launches
 - **Day and night themes** — the palette switches based on the weather data itself, not the device clock
 - **Location map** — shows where the displayed city is
+- **Dynamic Type** — text and the layout around it scale with the system text-size setting, and day names shorten when space runs short
 - **Real error states** — no connection, city not found, and an inactive API key are each handled and explained
 
 ---
@@ -61,6 +62,8 @@ Support/      Theme, settings, API key
 **Day/night comes from the data, not the device.** OpenWeather's icon codes end in `d` or `n`, so viewing London at midnight from Baghdad at noon correctly shows the night theme — it reflects the city being displayed, not where the phone is.
 
 **One generic networking method.** `fetch<T: Decodable>(_ path:_ items:)` serves all four endpoints — current weather, forecast, and geocoding — including one that returns a bare JSON array. Adding an endpoint is three lines, not forty.
+
+**Dynamic Type changes the layout, not just the font size.** Point sizes and column widths are `@ScaledMetric`, so they grow with the text. But scaling alone isn't enough: at accessibility sizes the temperature columns leave too little room for "Wednesday", so day names switch to their abbreviated form instead of truncating. The range is capped at `accessibility3` — supporting the largest two would mean restacking the today card vertically.
 
 **Times are the city's, not the device's.** Every forecast response carries the city's UTC offset. That timezone is threaded through the snapshot and used both for grouping days and for formatting times — so viewing Honolulu from Baghdad shows Honolulu's afternoon, rather than a sun icon under a "12 am" label. It's the kind of bug that stays invisible until you look up a distant city.
 
